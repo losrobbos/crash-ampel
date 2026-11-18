@@ -1,9 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { COLORS, LABEL, fredUrl, evaluate, backtest } from './indicators.js';
 
 const fmt = (x, d = 2) => x.toFixed(d).replace('.', ',');
 const pct = (x) => fmt(x * 100, 1) + ' %';
+const dfmt = (d) => d.split('-').reverse().join('.');
 const VERDICT = ['Ruhige Lage', 'Erhöhte Vorsicht', 'Warnlage'];
+const RANGES = [[0, 'Alles'], [30, '30 J.'], [20, '20 J.'], [10, '10 J.'], [5, '5 J.']];
+
+// Chart-Geometrie (viewBox-Einheiten)
+const W = 900, H = 260, TOP = 8, PLOT_BOTTOM = 204, BAND_Y = 214, BAND_H = 26;
 
 function Light({ c }) {
   return (
@@ -13,28 +18,100 @@ function Light({ c }) {
   );
 }
 
-function Chart({ strip }) {
-  const W = 900, H = 240, P = strip.length, lp = strip.map((s) => Math.log(s.p));
-  const lo = Math.min(...lp), hi = Math.max(...lp);
-  const x = (i) => (i / (P - 1)) * W, y = (v) => 8 + (1 - (v - lo) / (hi - lo)) * (H - 56);
-  const pts = lp.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
-  const years = strip.map((s, i) => [s.d.slice(0, 4), i]).filter(([yr, i]) => yr % 10 === 0 && (i === 0 || strip[i - 1].d.slice(0, 4) !== yr));
+// Statische Ebene (Gitter, Ampelleiste, Kurslinie): wird beim Hovern nicht neu gezeichnet
+const Layer = memo(function Layer({ strip, g }) {
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="chart" role="img" aria-label="Indexverlauf mit Ampelfarbe je Woche">
-      <polyline points={pts} fill="none" stroke="#1b2430" strokeWidth="1.4" />
-      {strip.map((s, i) => s.c != null && <rect key={i} x={x(i)} y={H - 34} width={W / P + 0.6} height="18" fill={COLORS[s.c]} />)}
-      {years.map(([yr, i]) => <text key={yr} x={x(i)} y={H - 4} fontSize="12" fill="#5a6676">{yr}</text>)}
-    </svg>
+    <>
+      {g.ticks.map((t) => (
+        <g key={t.i}>
+          <line x1={g.x(t.i)} x2={g.x(t.i)} y1={TOP} y2={BAND_Y + BAND_H} stroke="#d3d9e0" strokeWidth="1" />
+          <text x={g.x(t.i)} y={H - 4} fontSize="12" fill="#5a6676" textAnchor={t.a}>{t.yr}</text>
+        </g>
+      ))}
+      {strip.map((s, i) => s.c != null && <rect key={i} x={g.x(i) - g.cw / 2} y={BAND_Y} width={g.cw} height={BAND_H} fill={COLORS[s.c]} />)}
+      <polyline points={g.pts} fill="none" stroke="#1b2430" strokeWidth="1.4" />
+    </>
+  );
+});
+
+function Chart({ strip }) {
+  const P = strip.length, [h, setH] = useState(null);
+  const g = useMemo(() => {
+    const lp = strip.map((s) => Math.log(s.p)), lo = Math.min(...lp), hi = Math.max(...lp);
+    const x = (i) => (i / (P - 1)) * W, y = (v) => TOP + (1 - (v - lo) / (hi - lo || 1)) * (PLOT_BOTTOM - TOP);
+    const span = +strip[P - 1].d.slice(0, 4) - +strip[0].d.slice(0, 4), step = span > 40 ? 10 : span > 20 ? 5 : span > 10 ? 2 : 1;
+    const ticks = [];
+    strip.forEach((s, i) => {
+      const yr = +s.d.slice(0, 4);
+      if (yr % step === 0 && (i === 0 || +strip[i - 1].d.slice(0, 4) !== yr)) {
+        const px = x(i); ticks.push({ i, yr, a: px < 24 ? 'start' : px > W - 24 ? 'end' : 'middle' });
+      }
+    });
+    return { lp, x, y, cw: W / (P - 1) + 0.4, ticks, pts: lp.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ') };
+  }, [strip, P]);
+
+  useEffect(() => setH(null), [strip]);
+
+  const clamp = (n) => Math.max(0, Math.min(P - 1, n));
+  const pick = (e) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    setH(clamp(Math.round(((e.clientX - r.left) / r.width) * (P - 1))));
+  };
+  const key = (e) => {
+    const step = e.shiftKey ? 13 : 1; let n = h ?? P - 1;
+    if (e.key === 'ArrowLeft') n -= step; else if (e.key === 'ArrowRight') n += step;
+    else if (e.key === 'Home') n = 0; else if (e.key === 'End') n = P - 1; else return;
+    e.preventDefault(); setH(clamp(n));
+  };
+
+  const s = h != null ? strip[h] : null, cx = s ? g.x(h) : 0;
+  return (
+    <div className="chartwrap">
+      <svg viewBox={`0 0 ${W} ${H}`} className="chart" tabIndex={0} role="img"
+        aria-label="Indexverlauf mit Ampelfarbe je Woche. Pfeiltasten wählen die Woche, Umschalt+Pfeil springt 13 Wochen."
+        onPointerMove={pick} onPointerDown={pick} onPointerLeave={(e) => e.pointerType === 'mouse' && setH(null)}
+        onKeyDown={key} onFocus={() => h == null && setH(P - 1)} onBlur={() => setH(null)}>
+        <Layer strip={strip} g={g} />
+        {s && (
+          <g pointerEvents="none">
+            <line x1={cx} x2={cx} y1={TOP} y2={BAND_Y + BAND_H} stroke="#1b2430" strokeWidth="1" strokeDasharray="4 3" />
+            <rect x={cx - Math.max(g.cw, 3) / 2} y={BAND_Y - 1} width={Math.max(g.cw, 3)} height={BAND_H + 2} fill="none" stroke="#1b2430" strokeWidth="2" />
+            <circle cx={cx} cy={g.y(g.lp[h])} r="4.5" fill="#fff" stroke="#1b2430" strokeWidth="2" />
+          </g>
+        )}
+      </svg>
+      {s && (
+        <div className="tip" role="status" style={{ left: `${(cx / W) * 100}%`, transform: `translateX(${cx < W * 0.15 ? '0' : cx > W * 0.85 ? '-100%' : '-50%'})` }}>
+          <b>{dfmt(s.d)}</b> <small>Wochenschluss</small>
+          <span>Index {s.p.toLocaleString('de-DE', { maximumFractionDigits: 0 })}</span>
+          <span>{s.c != null ? <><i className="dot" style={{ background: COLORS[s.c] }} /> {LABEL[s.c]}</> : 'keine Ampel (zu wenig Daten)'}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Group({ label, items, value, onChange }) {
+  return (
+    <div role="group" aria-label={label}>
+      {items.map(([k, n]) => <button key={k} aria-pressed={value === k} onClick={() => onChange(k)}>{n}</button>)}
+    </div>
   );
 }
 
 export default function App() {
-  const [data, setData] = useState(null), [err, setErr] = useState(false), [ref, setRef] = useState('SPX');
+  const [data, setData] = useState(null), [err, setErr] = useState(false), [ref, setRef] = useState('SPX'), [range, setRange] = useState(20);
   useEffect(() => {
     fetch(import.meta.env.BASE_URL + 'data.json').then((r) => { if (!r.ok) throw 0; return r.json(); }).then(setData).catch(() => setErr(true));
   }, []);
   const now = useMemo(() => data && evaluate(data.series, data.updated.slice(0, 10)), [data]);
   const bt = useMemo(() => data && backtest(data.prices[ref], data.series), [data, ref]);
+  const view = useMemo(() => {
+    if (!bt || !range) return bt && bt.strip;
+    const c = new Date(bt.strip.at(-1).d + 'T00:00:00Z'); c.setUTCFullYear(c.getUTCFullYear() - range);
+    const iso = c.toISOString().slice(0, 10);
+    return bt.strip.filter((s) => s.d >= iso);
+  }, [bt, range]);
 
   if (err) return <main><p className="msg">Noch keine Daten. Lokal <code>npm run fetch</code> ausführen (erzeugt <code>public/data.json</code>) und neu laden.</p></main>;
   if (data && !now) return <main><p className="msg">Die geladenen Daten sind veraltet oder unvollständig. Bitte <code>npm run fetch</code> erneut ausführen.</p></main>;
@@ -69,12 +146,14 @@ export default function App() {
       <section>
         <div className="bar">
           <h2>Backtest</h2>
-          <div role="group" aria-label="Referenzindex">
-            {[['SPX', 'S&P 500'], ['NDX', 'NASDAQ 100']].map(([k, n]) => <button key={k} aria-pressed={ref === k} onClick={() => setRef(k)}>{n}</button>)}
+          <div className="groups">
+            <Group label="Referenzindex" items={[['SPX', 'S&P 500'], ['NDX', 'NASDAQ 100']]} value={ref} onChange={setRef} />
+            <Group label="Zeitraum" items={RANGES} value={range} onChange={setRange} />
           </div>
         </div>
-        <Chart strip={bt.strip} />
+        <Chart strip={view} />
         <table>
+          <caption>Auswertung über den gesamten Zeitraum (unabhängig vom Chart-Ausschnitt)</caption>
           <thead><tr><th>Ampel</th><th>Wochen</th><th>Ø Ertrag 26 Wo.</th><th>Ø Tiefpunkt 26 Wo.</th><th>Anteil mit ≥ 10 % Rückgang</th></tr></thead>
           <tbody>
             {bt.B.map((b, c) => (

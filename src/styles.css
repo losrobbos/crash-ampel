@@ -17,12 +17,18 @@ article a{font-size:.85rem;color:#1d5fa8}
 .dot{display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:-2px}
 article .dot{position:absolute;top:18px;right:16px}
 .bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px}
-button{font:inherit;padding:6px 14px;border:1px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer}
-button:first-child{border-radius:6px 0 0 6px}button:last-child{border-radius:0 6px 6px 0;margin-left:-1px}
+button{font:inherit;padding:6px 14px;border:1px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer;border-radius:0}
+button+button{margin-left:-1px}button:first-child{border-radius:6px 0 0 6px}button:last-child{border-radius:0 6px 6px 0}
+.groups{display:flex;gap:16px;flex-wrap:wrap}
 button[aria-pressed=true]{background:var(--ink);color:#fff}
 button:focus-visible,a:focus-visible{outline:3px solid #1d5fa8;outline-offset:2px}
-.chart{width:100%;height:auto;background:var(--card);border:1px solid var(--line);border-radius:6px}
+.chartwrap{position:relative}
+.chart{display:block;width:100%;height:auto;background:var(--card);border:1px solid var(--line);border-radius:6px;touch-action:pan-y;cursor:crosshair}
+.chart:focus-visible{outline:3px solid #1d5fa8;outline-offset:2px}
+.tip{position:absolute;top:10px;pointer-events:none;background:var(--ink);color:#fff;padding:6px 10px;border-radius:6px;font-size:.85rem;line-height:1.4;display:flex;flex-direction:column;white-space:nowrap}
+.tip small{opacity:.7;font-weight:400}.tip .dot{width:10px;height:10px;vertical-align:-1px}
 table{width:100%;border-collapse:collapse;margin:16px 0;background:var(--card)}
+caption{caption-side:top;text-align:left;color:var(--mute);font-size:.85rem;padding:0 0 6px}
 th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
 th:first-child,td:first-child{text-align:left}th{font-size:.85rem;color:var(--mute);font-weight:600}
 .msg{padding:48px 0;color:var(--mute)}
