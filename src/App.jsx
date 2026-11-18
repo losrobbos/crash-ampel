@@ -10,6 +10,32 @@ const RANGES = [[0, 'Alles'], [30, '30 J.'], [20, '20 J.'], [10, '10 J.'], [5, '
 // Chart-Geometrie (viewBox-Einheiten)
 const W = 900, H = 260, TOP = 8, PLOT_BOTTOM = 204, BAND_Y = 214, BAND_H = 26;
 
+// Darstellbarer Wertebereich je Skala (nur für die Anzeige, die Ampel-Logik nutzt die Schwellen aus indicators.js)
+const SCALE = { NFCI: [-1, 1], STLFSI4: [-1.5, 3], T10Y3M: [-1.5, 3.5], BAMLH0A0HYM2: [2, 8], VIXCLS: [10, 40] };
+const f1 = (x) => String(x).replace('.', ',');
+const bandText = ({ dir, t: [a, b] }) =>
+  dir > 0 ? [`unter ${f1(a)}`, `${f1(a)} bis ${f1(b)}`, `ab ${f1(b)}`] : [`über ${f1(a)}`, `${f1(b)} bis ${f1(a)}`, `unter ${f1(b)}`];
+
+// Einordnung: Farbskala mit Marker beim aktuellen Wert plus Schwellen als Text
+function Scale({ i, v }) {
+  const [min, max] = SCALE[i.id], lo = Math.min(...i.t), hi = Math.max(...i.t), edges = [min, lo, hi, max];
+  const p = (x) => Math.max(0, Math.min(100, ((x - min) / (max - min)) * 100));
+  const cols = i.dir > 0 ? [0, 1, 2] : [2, 1, 0], b = bandText(i);
+  return (
+    <div className="scale">
+      <div className="track" role="img" aria-label={`Aktueller Wert ${fmt(v)} auf der Farbskala`}>
+        <div className="seg">
+          {cols.map((c, k) => <span key={k} style={{ left: `${p(edges[k])}%`, width: `${p(edges[k + 1]) - p(edges[k])}%`, background: COLORS[c] }} />)}
+        </div>
+        <em style={{ left: `${p(v)}%` }} />
+      </div>
+      <div className="ticks">{[lo, hi].map((x) => <span key={x} style={{ left: `${p(x)}%` }}>{f1(x)}</span>)}</div>
+      <ul>{[0, 1, 2].map((c) => <li key={c}><i className="dot" style={{ background: COLORS[c] }} />{LABEL[c]}: {b[c]}{i.unit}</li>)}</ul>
+      {i.rise && <p className="sub">Gelb auch bei einem Anstieg um ≥ {f1(i.rise)} in 4 Wochen</p>}
+    </div>
+  );
+}
+
 function Light({ c }) {
   return (
     <div className="light" role="img" aria-label={LABEL[c]}>
@@ -137,6 +163,7 @@ export default function App() {
               <p className="sub">{i.sub}</p>
               <p className="val">{fmt(v)}<small>{i.unit}</small></p>
               <p className="sub">{Math.abs(trend) < eps ? '→ stabil' : worse > 0 ? '↗ Belastung steigt' : '↘ Belastung sinkt'} (4 Wochen) · Stand {date}</p>
+              <details><summary>Schwellenwerte</summary><Scale i={i} v={v} /></details>
               <a href={fredUrl(i.id)} target="_blank" rel="noreferrer">Datenreihe bei FRED</a>
             </article>
           );
