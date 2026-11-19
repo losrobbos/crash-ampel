@@ -1,6 +1,6 @@
 # Crash-Ampel
 
-Frühwarn-Ampel aus NFCI, St.-Louis-Stressindex, Zinskurve, HY-Spread und VIX. Backtest gegen S&P 500 und NASDAQ 100.
+Frühwarn-Ampel aus NFCI, St.-Louis-Stressindex, Zinskurve, Erstanträgen Arbeitslosenhilfe, HY-Spread und VIX. Backtest gegen S&P 500 und NASDAQ 100.
 
     npm install
     npm run fetch   # lädt FRED- und Yahoo-Daten nach public/data.json

@@ -36,6 +36,12 @@ const TEXT = {
     warum: 'Er zeigt direkt, wie nervös der Markt ist, und reagiert sofort. Damit bestätigt er akute Stressphasen schnell.',
     lesen: 'Er ist ein Bestätigungs-, kein Frühwarnsignal: Vor Crashs steht er oft noch niedrig. Deshalb hat er nur ein kleines Gewicht.',
   },
+  ICSA_REL: {
+    kat: 'Arbeitsmarkt', timing: 'Frühindikator (wöchentlich)',
+    was: 'Die wöchentliche Zahl neuer Anträge auf Arbeitslosenhilfe in den USA. Die Ampel betrachtet den 4-Wochen-Durchschnitt und misst, wie viel Prozent er über seinem Tiefstwert der letzten 52 Wochen liegt. So spielt das absolute Niveau, das mit der Bevölkerung wächst, keine Rolle.',
+    warum: 'Entlassungen sind der früheste Moment, in dem sich eine Abkühlung am Arbeitsmarkt zeigt, lange bevor die Arbeitslosenquote steigt. Eine Studie des Gemeinsamen Wirtschaftsausschusses des US-Kongresses von 2008 hält die Erstanträge für den besten Vorlaufindikator am Arbeitsmarkt. Er ergänzt die Finanzindikatoren um den Blick auf die Realwirtschaft.',
+    lesen: 'Je weiter der Schnitt über sein Jahrestief steigt, desto stärker kühlt der Arbeitsmarkt ab. Einzelne Wochen sind verrauscht (Feiertage, Streiks, Wetter), deshalb zählt der 4-Wochen-Schnitt. Die Schwellen sind Startwerte und noch nicht kalibriert. Andere Arbeitsmarktreihen wie Sahm-Regel oder Beschäftigungsquote stehen bewusst nicht im Score, weil sie stark überlappen und später reagieren.',
+  },
 };
 
 const MORE = [
@@ -44,8 +50,8 @@ const MORE = [
   { id: 'T10Y2Y', name: 'Zinskurve 10J − 2J', kat: 'Konjunktur', text: 'Der bekannteste Zinskurven-Abstand. Der Zweijahreszins spiegelt die erwartete Geldpolitik der Fed. Gute Ergänzung zum 10J−3M-Abstand, mit ähnlicher Aussage.' },
   { id: 'BAA10Y', name: 'Baa-Unternehmensanleihen − 10J', kat: 'Kreditmarkt', text: 'Kreditspread für Unternehmen guter Bonität, verfügbar seit 1986. Eine mögliche Langzeit-Alternative zum HY-Spread, der auf FRED nur kurz zurückreicht.' },
   { id: 'DRTSCILM', name: 'Kreditvergabestandards (SLOOS)', kat: 'Konjunktur', text: 'Quartalsumfrage der Fed unter Banken: Welcher Anteil verschärft die Kreditstandards für Firmenkredite? Eine Kreditklemme ging Rezessionen oft voraus. Die Daten kommen aber nur quartalsweise und mit Verzögerung.' },
-  { id: 'SAHMREALTIME', name: 'Sahm-Regel', kat: 'Arbeitsmarkt', text: 'Steigt die Arbeitslosenquote im 3-Monats-Schnitt um mindestens 0,5 Prozentpunkte über ihr Tief der letzten zwölf Monate, deutet das auf eine Rezession hin. Historisch zuverlässig, aber eher spät.' },
-  { id: 'ICSA', name: 'Erstanträge Arbeitslosenhilfe', kat: 'Arbeitsmarkt', text: 'Wöchentliche Zahl neuer Anträge. Schnelles Frühsignal für Entlassungswellen. Zur Glättung am besten den 4-Wochen-Durchschnitt betrachten.' },
+  { id: 'SAHMREALTIME', name: 'Sahm-Regel', kat: 'Arbeitsmarkt', text: 'Steigt die Arbeitslosenquote im 3-Monats-Schnitt um mindestens 0,5 Prozentpunkte über ihr Tief der letzten zwölf Monate, deutet das auf eine Rezession hin. Historisch zuverlässig, aber eher spät. Nicht im Score, weil sie stark mit den Erstanträgen überlappt.' },
+  { name: 'Beschäftigungsquote', kat: 'Arbeitsmarkt', text: 'Anteil der Erwerbstätigen an der Bevölkerung. Eher nachlaufend, und das Niveau sinkt durch die Alterung strukturell. Aussagekräftiger ist die Variante für 25- bis 54-Jährige.', links: [['EMRATIO', fredUrl('EMRATIO')], ['25–54 Jahre', fredUrl('LNS12300060')]] },
   { id: 'PERMIT', name: 'Baugenehmigungen', kat: 'Konjunktur', text: 'Der Wohnungsbau ist stark zinsabhängig und dreht in der Regel früh. Ein anhaltender Rückgang gilt als klassisches Vorlaufsignal der Konjunktur.' },
   { id: 'UMCSENT', name: 'Verbrauchervertrauen (Michigan)', kat: 'Stimmung', text: 'Umfrage unter US-Haushalten. Der Konsum trägt den größten Teil der US-Wirtschaft, der Index taugt aber nur begrenzt fürs Timing.' },
   { id: 'WALCL', name: 'Bilanzsumme der Fed', kat: 'Liquidität', text: 'Wächst die Bilanz, stützt das die Marktliquidität, schrumpft sie, wird Liquidität entzogen. Wichtiger Hintergrund, aber kein klares Timing-Signal.' },
@@ -58,7 +64,7 @@ export default function Guide() {
   return (
     <main className="guide">
       <h1>Anleitung</h1>
-      <p className="lead">So liest du die Ampel: was die fünf Indikatoren messen, warum sie für den Aktienmarkt zählen und wie die Gesamtfarbe entsteht. Die Ampel ist ein Orientierungswerkzeug und keine Prognose.</p>
+      <p className="lead">So liest du die Ampel: was die sechs Indikatoren messen, warum sie für den Aktienmarkt zählen und wie die Gesamtfarbe entsteht. Die Ampel ist ein Orientierungswerkzeug und keine Prognose.</p>
 
       <h2>So entsteht die Gesamt-Ampel</h2>
       <div className="prose">
@@ -70,7 +76,7 @@ export default function Guide() {
         </ul>
       </div>
 
-      <h2>Die fünf Indikatoren</h2>
+      <h2>Die sechs Indikatoren</h2>
       {INDICATORS.map((i) => {
         const t = TEXT[i.id], b = bands(i);
         return (
@@ -86,7 +92,7 @@ export default function Guide() {
               <dt>Warum ist er für Aktien wichtig?</dt><dd>{t.warum}</dd>
               <dt>So liest du ihn</dt><dd>{t.lesen}</dd>
             </dl>
-            <a href={fredUrl(i.id)} target="_blank" rel="noreferrer">Datenreihe bei FRED</a>
+            <a href={fredUrl(i.fred || i.id)} target="_blank" rel="noreferrer">Datenreihe bei FRED</a>
           </article>
         );
       })}
@@ -108,7 +114,7 @@ export default function Guide() {
       <div className="prose">
         <ul>
           <li>Die Ampel zeigt erhöhte Risikolagen, sie sagt keinen Crash voraus. Auch Rot-Phasen enden oft ohne größeren Rückgang.</li>
-          <li>Viele Indikatoren sind eher bestätigend als vorlaufend. Nur die Zinskurve ist ein echter Frühindikator.</li>
+          <li>Viele Indikatoren sind eher bestätigend als vorlaufend. Nur Zinskurve und Erstanträge sind echte Frühindikatoren.</li>
           <li>FRED-Werte wie der NFCI werden revidiert. Rückblickende Auswertungen sehen dadurch besser aus, als die Ampel in Echtzeit war.</li>
           <li>Schwellen und Gewichte sind Startwerte und stehen in <code>src/indicators.js</code>. Diese Seite liest sie von dort, sie bleibt also automatisch aktuell.</li>
         </ul>

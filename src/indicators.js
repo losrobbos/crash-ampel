@@ -2,11 +2,12 @@ export const COLORS = ['#2f8f5b', '#e0a100', '#c8402f'];
 export const LABEL = ['Grün', 'Gelb', 'Rot'];
 // dir 1: höher = schlechter, -1: niedriger = schlechter; t = [Gelb ab, Rot ab]; w = Gewicht
 export const INDICATORS = [
-  { id: 'NFCI', name: 'NFCI', sub: 'Finanzbedingungen (Chicago Fed)', w: 0.3, dir: 1, t: [-0.3, 0], rise: 0.15, unit: '' },
-  { id: 'STLFSI4', name: 'St. Louis Stressindex', sub: 'Finanzstress (St. Louis Fed)', w: 0.15, dir: 1, t: [0, 1], unit: '' },
+  { id: 'NFCI', name: 'NFCI', sub: 'Finanzbedingungen (Chicago Fed)', w: 0.25, dir: 1, t: [-0.3, 0], rise: 0.15, unit: '' },
+  { id: 'STLFSI4', name: 'St. Louis Stressindex', sub: 'Finanzstress (St. Louis Fed)', w: 0.1, dir: 1, t: [0, 1], unit: '' },
   { id: 'T10Y3M', name: 'Zinskurve 10J − 3M', sub: 'Negativ = invertiert', w: 0.2, dir: -1, t: [0.5, 0], unit: ' Pp.' },
-  { id: 'BAMLH0A0HYM2', name: 'High-Yield-Spread', sub: 'Risikoaufschlag Unternehmensanleihen', w: 0.2, dir: 1, t: [4, 5.5], unit: ' Pp.' },
+  { id: 'BAMLH0A0HYM2', name: 'High-Yield-Spread', sub: 'Risikoaufschlag Unternehmensanleihen', w: 0.15, dir: 1, t: [4, 5.5], unit: ' Pp.' },
   { id: 'VIXCLS', name: 'VIX', sub: 'Erwartete Schwankung S&P 500', w: 0.15, dir: 1, t: [20, 30], unit: '' },
+  { id: 'ICSA_REL', fred: 'ICSA', name: 'Erstanträge Arbeitslosenhilfe', sub: '4-Wochen-Schnitt über 52-Wochen-Tief', w: 0.15, dir: 1, t: [10, 25], unit: ' %' },
 ];
 export const fredUrl = (id) => `https://fred.stlouisfed.org/series/${id}`;
 const level = (i, v) => (i.dir * v >= i.dir * i.t[1] ? 2 : i.dir * v >= i.dir * i.t[0] ? 1 : 0);
