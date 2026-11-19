@@ -38,7 +38,6 @@ function Scale({ i, v }) {
 
 // ---- Datenbasis (alles aus data.json) ----
 const ds = (d) => `${d.slice(8, 10)}.${d.slice(5, 7)}.${d.slice(2, 4)}`;
-const addDays = (d, n) => new Date(Date.parse(d + 'T00:00:00Z') + n * 864e5).toISOString().slice(0, 10);
 const num0 = (x) => x.toLocaleString('de-DE', { maximumFractionDigits: 0 });
 
 function Icon({ n }) {
@@ -80,9 +79,9 @@ function Claims({ raw }) {
     <>
       <table className="mini">
         <thead><tr><th>Woche bis</th><th>Anträge</th><th>4-Wo.-Schnitt</th></tr></thead>
-        <tbody>{rows.map((r) => <tr key={r.k} className={r.k === m ? 'lo' : ''}><td>{ds(addDays(r.d, -6))}</td><td>{num0(r.v)}</td><td>{num0(avg[r.k])}</td></tr>)}</tbody>
+        <tbody>{rows.map((r) => <tr key={r.k} className={r.k === m ? 'lo' : ''}><td>{ds(r.d)}</td><td>{num0(r.v)}</td><td>{num0(avg[r.k])}</td></tr>)}</tbody>
       </table>
-      <p className="sub">Markiert: Tief des 4-Wochen-Schnitts der letzten 52 Wochen ({num0(avg[m])}, Woche bis {ds(addDays(raw[m][0], -6))}). Aktuell liegt der Schnitt {fmt(rel, 1)} % darüber.</p>
+      <p className="sub">Markiert: Tief des 4-Wochen-Schnitts der letzten 52 Wochen ({num0(avg[m])}, Woche bis {ds(raw[m][0])}). Aktuell liegt der Schnitt {fmt(rel, 1)} % darüber.</p>
     </>
   );
 }

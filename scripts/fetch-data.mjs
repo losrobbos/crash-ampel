@@ -7,7 +7,8 @@ const fri = (iso) => {
   d.setUTCDate(d.getUTCDate() + ((5 - d.getUTCDay() + 7) % 7));
   return d.toISOString().slice(0, 10);
 };
-const weekly = (rows) => [...new Map(rows.map(([d, v]) => [fri(d), v]))].sort((a, b) => (a[0] < b[0] ? -1 : 1));
+// Pro Woche (Samstag bis Freitag) bleibt der letzte Wert, mit seinem ECHTEN Datum (nicht dem Freitag der Woche)
+const weekly = (rows) => [...new Map(rows.map(([d, v]) => [fri(d), [d, v]])).values()].sort((a, b) => (a[0] < b[0] ? -1 : 1));
 const get = async (url, headers = {}) => {
   const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 crash-ampel', ...headers } });
   if (!r.ok) throw new Error(`${r.status} ${url}`);
