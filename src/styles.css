@@ -63,3 +63,9 @@ summary:focus-visible{outline:3px solid #1d5fa8;outline-offset:2px}
 .ticks span{position:absolute;transform:translateX(-50%)}
 .scale ul{list-style:none;margin:4px 0 0;padding:0;font-size:.85rem}
 .scale .dot{width:10px;height:10px;margin-right:6px}
+.ico{width:14px;height:14px;vertical-align:-2px;margin-right:6px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.cards article>a{display:inline-block;margin-top:2px}
+.spark{display:block;width:100%;height:auto;margin:8px 0 2px}
+.mini{margin:6px 0;background:transparent}
+.mini th,.mini td{padding:3px 4px;font-size:.85rem}
+.mini .lo td{font-weight:700;background:var(--bg)}

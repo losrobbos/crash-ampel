@@ -36,6 +36,79 @@ function Scale({ i, v }) {
   );
 }
 
+// ---- Datenbasis (alles aus data.json) ----
+const ds = (d) => `${d.slice(8, 10)}.${d.slice(5, 7)}.${d.slice(2, 4)}`;
+const addDays = (d, n) => new Date(Date.parse(d + 'T00:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+const num0 = (x) => x.toLocaleString('de-DE', { maximumFractionDigits: 0 });
+
+function Icon({ n }) {
+  const p = {
+    sliders: <><path d="M4 7h16M4 12h16M4 17h16" /><circle cx="9" cy="7" r="2" fill="#fff" /><circle cx="15" cy="12" r="2" fill="#fff" /><circle cx="8" cy="17" r="2" fill="#fff" /></>,
+    table: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 10h18M9 10v9" /></>,
+    link: <path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />,
+  }[n];
+  return <svg className="ico" viewBox="0 0 24 24" aria-hidden="true">{p}</svg>;
+}
+
+// CLAIMS-BEGIN
+const claimsView = (raw) => {
+  const n = raw.length;
+  const avg = raw.map((_, k) => { const w = raw.slice(Math.max(0, k - 3), k + 1); return w.reduce((a, [, v]) => a + v, 0) / w.length; });
+  const from = Math.max(3, n - 52);
+  let m = from; for (let k = from; k < n; k++) if (avg[k] < avg[m]) m = k;
+  const start = Math.max(Math.min(m, n - 4), n - 10);
+  return { avg, m, rel: (avg[n - 1] / avg[m] - 1) * 100, rows: raw.slice(start).map(([d, v], j) => ({ k: start + j, d, v })) };
+};
+// CLAIMS-END
+
+function Spark({ s, i }) {
+  const pts = s.slice(-52), vs = pts.map((p) => p[1]), W = 260, H = 56;
+  const lo = Math.min(...vs, ...i.t), hi = Math.max(...vs, ...i.t);
+  const x = (k) => (k / (pts.length - 1)) * W, y = (v) => 4 + (1 - (v - lo) / (hi - lo || 1)) * (H - 8);
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="spark" role="img" aria-label="Verlauf der letzten 52 Wochen mit Gelb- und Rot-Schwelle">
+      {i.t.map((t, k) => <line key={k} x1="0" x2={W} y1={y(t)} y2={y(t)} stroke={COLORS[k + 1]} strokeDasharray="3 3" />)}
+      <polyline points={vs.map((v, k) => `${x(k).toFixed(1)},${y(v).toFixed(1)}`).join(' ')} fill="none" stroke="#1b2430" strokeWidth="1.5" />
+      <circle cx={x(vs.length - 1)} cy={y(vs[vs.length - 1])} r="3" fill="#1b2430" />
+    </svg>
+  );
+}
+
+function Claims({ raw }) {
+  const { avg, m, rel, rows } = claimsView(raw);
+  return (
+    <>
+      <table className="mini">
+        <thead><tr><th>Woche bis</th><th>Anträge</th><th>4-Wo.-Schnitt</th></tr></thead>
+        <tbody>{rows.map((r) => <tr key={r.k} className={r.k === m ? 'lo' : ''}><td>{ds(addDays(r.d, -6))}</td><td>{num0(r.v)}</td><td>{num0(avg[r.k])}</td></tr>)}</tbody>
+      </table>
+      <p className="sub">Markiert: Tief des 4-Wochen-Schnitts der letzten 52 Wochen ({num0(avg[m])}, Woche bis {ds(addDays(raw[m][0], -6))}). Aktuell liegt der Schnitt {fmt(rel, 1)} % darüber.</p>
+    </>
+  );
+}
+
+// Minimale Datenbasis je Indikator: Verlauf, letzte Werte, Spanne der letzten 52 Wochen
+function Basis({ i, series }) {
+  const s = series[i.id] || [];
+  if (s.length < 2) return null;
+  const yr = s.slice(-52).map((p) => p[1]);
+  return (
+    <>
+      <Spark s={s} i={i} />
+      <p className="sub">Letzte 52 Wochen, gestrichelt: Gelb- und Rot-Schwelle.</p>
+      {i.id === 'ICSA_REL' && series.ICSA ? <Claims raw={series.ICSA} /> : (
+        <>
+          <table className="mini">
+            <thead><tr><th>Datum</th><th>Wert</th></tr></thead>
+            <tbody>{s.slice(-6).reverse().map(([d, v]) => <tr key={d}><td>{ds(d)}</td><td>{fmt(v)}{i.unit}</td></tr>)}</tbody>
+          </table>
+          <p className="sub">Spanne der letzten 52 Wochen: {fmt(Math.min(...yr))} bis {fmt(Math.max(...yr))}{i.unit}</p>
+        </>
+      )}
+    </>
+  );
+}
+
 function Light({ c }) {
   return (
     <div className="light" role="img" aria-label={LABEL[c]}>
@@ -163,8 +236,9 @@ export default function App() {
               <p className="sub">{i.sub}</p>
               <p className="val">{fmt(v)}<small>{i.unit}</small></p>
               <p className="sub">{Math.abs(trend) < eps ? '→ stabil' : worse > 0 ? '↗ Belastung steigt' : '↘ Belastung sinkt'} (4 Wochen) · Stand {date}</p>
-              <details><summary>Schwellenwerte</summary><Scale i={i} v={v} /></details>
-              <a href={fredUrl(i.fred || i.id)} target="_blank" rel="noreferrer">Datenreihe bei FRED</a>
+              <details><summary><Icon n="sliders" />Schwellenwerte</summary><Scale i={i} v={v} /></details>
+              <details><summary><Icon n="table" />Datenbasis</summary><Basis i={i} series={data.series} /></details>
+              <a href={fredUrl(i.fred || i.id)} target="_blank" rel="noreferrer"><Icon n="link" />Datenreihe bei FRED</a>
             </article>
           );
         })}

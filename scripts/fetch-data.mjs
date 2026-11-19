@@ -36,7 +36,6 @@ const rel = (rows) => {
   return rows.map(([d], i) => [d, +((avg[i] / Math.min(...avg.slice(Math.max(0, i - 51), i + 1)) - 1) * 100).toFixed(1)]).slice(51);
 };
 // REL-END
-series.ICSA_REL = rel(series.ICSA);
-delete series.ICSA;
+series.ICSA_REL = rel(series.ICSA); // Rohwerte (series.ICSA) bleiben für die Anzeige der Datenbasis erhalten
 mkdirSync('public', { recursive: true });
 writeFileSync('public/data.json', JSON.stringify({ updated: new Date().toISOString(), series, prices }));
