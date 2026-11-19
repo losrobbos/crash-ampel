@@ -3,11 +3,11 @@
 Frühwarn-Ampel aus NFCI, St.-Louis-Stressindex, Zinskurve, Erstanträgen Arbeitslosenhilfe, HY-Spread und VIX. Backtest gegen S&P 500 und NASDAQ 100.
 
     npm install
-    npm run fetch   # lädt FRED- und Yahoo-Daten nach public/data.json
+    npm run fetch   # lädt FRED- und Yahoo-Daten nach public/data-aktien.json
     npm run dev
 
 Veröffentlichung: Repo auf GitHub pushen, unter Settings > Pages die Quelle "GitHub Actions" wählen. Der Workflow holt täglich frische Daten und deployt.
-Schwellen und Gewichte stehen in `src/indicators.js`.
+Schwellen und Gewichte stehen in `src/ampel/aktien.js`.
 
 ---
 
@@ -44,7 +44,7 @@ Schwellen und Gewichte stehen in `src/indicators.js`.
        Yahoo SPX 3300
        Yahoo NDX 2000
 
-   Danach existiert die Datei `public/data.json`. Das Skript schreibt sie nur, wenn **alle** Abrufe geklappt haben.
+   Danach existiert die Datei `public/data-aktien.json`. Das Skript schreibt sie nur, wenn **alle** Abrufe geklappt haben.
 
 4. **App starten:**
 
@@ -56,7 +56,7 @@ Schwellen und Gewichte stehen in `src/indicators.js`.
 
 ## Teil B: Auf GitHub Pages veröffentlichen
 
-Der Workflow `.github/workflows/update.yml` holt die Daten selbst, baut die App und veröffentlicht sie. `public/data.json` wird deshalb **nicht** eingecheckt (steht in `.gitignore`).
+Der Workflow `.github/workflows/update.yml` holt die Daten selbst, baut die App und veröffentlicht sie. `public/data-aktien.json` wird deshalb **nicht** eingecheckt (steht in `.gitignore`).
 
 1. **Neues Repository** auf github.com anlegen (leer, ohne README).
 2. **Projekt hochladen** (Platzhalter ersetzen):
@@ -77,7 +77,7 @@ Hinweis: Bei privaten Repos braucht GitHub Pages einen bezahlten Plan (z. B. Git
 
 ## Teil C: Anpassen
 
-Alles Wichtige steht in `src/indicators.js`:
+Alles Wichtige steht in `src/ampel/aktien.js`:
 
 - `t: [gelb, rot]` sind die Schwellen je Indikator
 - `dir` gibt die Richtung an (1 = höher ist schlechter, -1 = niedriger ist schlechter)
@@ -98,7 +98,7 @@ Nach Änderungen im Dev-Modus (`npm run dev`) aktualisiert sich die Seite sofort
 | `npm install` meldet Versionsfehler | Node.js ist zu alt. Auf Version 20 oder neuer aktualisieren. |
 | Workflow-Lauf ist rot | Im Reiter *Actions* den roten Schritt öffnen. Meist ist es der Daten-Abruf (dann Workflow erneut starten) oder Pages ist noch nicht auf „GitHub Actions" gestellt. |
 | Veröffentlichte Seite bleibt weiß | In den Browser-Entwicklertools (F12) die Konsole prüfen. Die App nutzt relative Pfade (`base: './'`), das sollte auch unter `/DEIN-REPO/` funktionieren. |
-| Backtest zeigt für eine Farbe „keine Daten" | Kein Zeitraum erreichte diese Farbe mit den aktuellen Schwellen. Schwellen in `src/indicators.js` anpassen. |
+| Backtest zeigt für eine Farbe „keine Daten" | Kein Zeitraum erreichte diese Farbe mit den aktuellen Schwellen. Schwellen in `src/ampel/aktien.js` anpassen. |
 
 ## Hinweis zu den Daten
 

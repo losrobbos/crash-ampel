@@ -1,24 +1,21 @@
 import { memo, useEffect, useMemo, useState } from 'react';
-import { COLORS, LABEL, fredUrl, evaluate, backtest } from './indicators.js';
+import { COLORS, LABEL, fredUrl, evaluate, backtest } from './engine.js';
 
 const fmt = (x, d = 2) => x.toFixed(d).replace('.', ',');
 const pct = (x) => fmt(x * 100, 1) + ' %';
 const dfmt = (d) => d.split('-').reverse().join('.');
-const VERDICT = ['Ruhige Lage', 'Erhöhte Vorsicht', 'Warnlage'];
 const RANGES = [[0, 'Alles'], [30, '30 J.'], [20, '20 J.'], [10, '10 J.'], [5, '5 J.']];
 
 // Chart-Geometrie (viewBox-Einheiten)
 const W = 900, H = 260, TOP = 8, PLOT_BOTTOM = 204, BAND_Y = 214, BAND_H = 26;
 
-// Darstellbarer Wertebereich je Skala (nur für die Anzeige, die Ampel-Logik nutzt die Schwellen aus indicators.js)
-const SCALE = { NFCI: [-1, 1], STLFSI4: [-1.5, 3], T10Y3M: [-1.5, 3.5], BAMLH0A0HYM2: [2, 8], VIXCLS: [10, 40], ICSA_REL: [0, 50] };
 const f1 = (x) => String(x).replace('.', ',');
 const bandText = ({ dir, t: [a, b] }) =>
   dir > 0 ? [`unter ${f1(a)}`, `${f1(a)} bis ${f1(b)}`, `ab ${f1(b)}`] : [`über ${f1(a)}`, `${f1(b)} bis ${f1(a)}`, `unter ${f1(b)}`];
 
 // Einordnung: Farbskala mit Marker beim aktuellen Wert plus Schwellen als Text
 function Scale({ i, v }) {
-  const [min, max] = SCALE[i.id], lo = Math.min(...i.t), hi = Math.max(...i.t), edges = [min, lo, hi, max];
+  const [min, max] = i.scale, lo = Math.min(...i.t), hi = Math.max(...i.t), edges = [min, lo, hi, max];
   const p = (x) => Math.max(0, Math.min(100, ((x - min) / (max - min)) * 100));
   const cols = i.dir > 0 ? [0, 1, 2] : [2, 1, 0], b = bandText(i);
   return (
@@ -95,7 +92,7 @@ function Basis({ i, series }) {
     <>
       <Spark s={s} i={i} />
       <p className="sub">Letzte 52 Wochen, gestrichelt: Gelb- und Rot-Schwelle.</p>
-      {i.id === 'ICSA_REL' && series.ICSA ? <Claims raw={series.ICSA} /> : (
+      {i.basis === 'claims' && series[i.raw] ? <Claims raw={series[i.raw]} /> : (
         <>
           <table className="mini">
             <thead><tr><th>Datum</th><th>Wert</th></tr></thead>
@@ -197,13 +194,13 @@ function Group({ label, items, value, onChange }) {
   );
 }
 
-export default function App() {
-  const [data, setData] = useState(null), [err, setErr] = useState(false), [ref, setRef] = useState('SPX'), [range, setRange] = useState(20);
+export default function AmpelPage({ cfg }) {
+  const [data, setData] = useState(null), [err, setErr] = useState(false), [ref, setRef] = useState(cfg.refs[0][0]), [range, setRange] = useState(20);
   useEffect(() => {
-    fetch(import.meta.env.BASE_URL + 'data.json').then((r) => { if (!r.ok) throw 0; return r.json(); }).then(setData).catch(() => setErr(true));
-  }, []);
-  const now = useMemo(() => data && evaluate(data.series, data.updated.slice(0, 10)), [data]);
-  const bt = useMemo(() => data && backtest(data.prices[ref], data.series), [data, ref]);
+    fetch(import.meta.env.BASE_URL + cfg.dataFile).then((r) => { if (!r.ok) throw 0; return r.json(); }).then(setData).catch(() => setErr(true));
+  }, [cfg.dataFile]);
+  const now = useMemo(() => data && evaluate(cfg, data.series, data.updated.slice(0, 10)), [data, cfg]);
+  const bt = useMemo(() => data && backtest(cfg, data.prices[ref], data.series), [data, ref, cfg]);
   const view = useMemo(() => {
     if (!bt || !range) return bt && bt.strip;
     const c = new Date(bt.strip.at(-1).d + 'T00:00:00Z'); c.setUTCFullYear(c.getUTCFullYear() - range);
@@ -211,7 +208,7 @@ export default function App() {
     return bt.strip.filter((s) => s.d >= iso);
   }, [bt, range]);
 
-  if (err) return <main><p className="msg">Noch keine Daten. Lokal <code>npm run fetch</code> ausführen (erzeugt <code>public/data.json</code>) und neu laden.</p></main>;
+  if (err) return <main><p className="msg">Noch keine Daten. Lokal <code>npm run fetch</code> ausführen (erzeugt <code>public/{cfg.dataFile}</code>) und neu laden.</p></main>;
   if (data && !now) return <main><p className="msg">Die geladenen Daten sind veraltet oder unvollständig. Bitte <code>npm run fetch</code> erneut ausführen.</p></main>;
   if (!data) return <main><p className="msg">Lade Daten …</p></main>;
 
@@ -220,7 +217,7 @@ export default function App() {
       <header>
         <Light c={now.overall} />
         <div>
-          <h1>{VERDICT[now.overall]}</h1>
+          <h1>{cfg.verdicts[now.overall]}</h1>
           <p>Gewichteter Score {fmt(now.score)} von 2,00 · Datenstand {data.updated.slice(0, 10)}</p>
         </div>
       </header>
@@ -247,7 +244,7 @@ export default function App() {
         <div className="bar">
           <h2>Backtest</h2>
           <div className="groups">
-            <Group label="Referenzindex" items={[['SPX', 'S&P 500'], ['NDX', 'NASDAQ 100']]} value={ref} onChange={setRef} />
+            <Group label="Referenzindex" items={cfg.refs} value={ref} onChange={setRef} />
             <Group label="Zeitraum" items={RANGES} value={range} onChange={setRange} />
           </div>
         </div>
@@ -264,7 +261,7 @@ export default function App() {
             ))}
           </tbody>
         </table>
-        <p className="sub">Die Ampel wird für jede Woche mit den damals verfügbaren Reihen berechnet; fehlende Reihen werden herausgerechnet (der HY-Spread ist bei FRED nur für wenige Jahre abrufbar). Die 26-Wochen-Fenster überlappen, die Zahlen sind keine unabhängigen Beobachtungen. NFCI-Werte werden nachträglich revidiert und sind im Rückblick leicht zu gut. Kursdaten: Yahoo Finance, ohne Dividenden.</p>
+        <p className="sub">{cfg.backtestNote}</p>
       </section>
     </main>
   );
