@@ -11,10 +11,13 @@ const get = async (url, headers = {}) => {
   if (!r.ok) throw new Error(`${r.status} ${url}`);
   return r;
 };
-export async function fred(id) {
+// Rohwerte in der Originalfrequenz (z. B. täglich), ohne Wochen-Verdichtung
+export async function fredRaw(id) {
   const txt = await (await get(`https://fred.stlouisfed.org/graph/fredgraph.csv?id=${id}&cosd=1970-01-01`)).text();
-  const rows = txt.trim().split('\n').slice(1).map((l) => l.split(',')).filter(([, v]) => v && v !== '.').map(([d, v]) => [d, +v]);
-  return weekly(rows);
+  return txt.trim().split('\n').slice(1).map((l) => l.split(',')).filter(([, v]) => v && v !== '.').map(([d, v]) => [d, +v]);
+}
+export async function fred(id) {
+  return weekly(await fredRaw(id));
 }
 export async function yahoo(sym) {
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?period1=0&period2=${Math.floor(Date.now() / 1000)}&interval=1d`;

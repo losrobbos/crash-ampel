@@ -69,3 +69,5 @@ summary:focus-visible{outline:3px solid #1d5fa8;outline-offset:2px}
 .mini{margin:6px 0;background:transparent}
 .mini th,.mini td{padding:3px 4px;font-size:.85rem}
 .mini .lo td{font-weight:700;background:var(--bg)}
+
+.cards.info article{border-style:dashed;background:transparent}

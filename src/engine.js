@@ -5,6 +5,7 @@ const level = (i, v) => (i.dir * v >= i.dir * i.t[1] ? 2 : i.dir * v >= i.dir * 
 const idxAt = (s, d) => { let lo = 0, hi = s.length - 1, r = -1; while (lo <= hi) { const m = (lo + hi) >> 1; if (s[m][0] <= d) { r = m; lo = m + 1; } else hi = m - 1; } return r; };
 
 // Bewertet alle Indikatoren zum Stichtag; fehlende Reihen werden herausgerechnet (Gewichte renormiert)
+// Indikatoren mit info: true bekommen Farbe und Trend, bleiben aber außerhalb von Score, Gesamt-Ampel und Backtest
 export function evaluate(cfg, series, date) {
   const rows = []; let sum = 0, wsum = 0;
   for (const i of cfg.indicators) {
@@ -13,7 +14,8 @@ export function evaluate(cfg, series, date) {
     const v = s[k][1], trend = v - s[Math.max(0, k - 4)][1];
     let lv = level(i, v);
     if (i.rise && lv === 0 && trend >= i.rise) lv = 1; // schneller Anstieg = mindestens Gelb
-    rows.push({ i, v, trend, lv, date: s[k][0] }); sum += i.w * lv; wsum += i.w;
+    rows.push({ i, v, trend, lv, date: s[k][0] });
+    if (!i.info) { sum += i.w * lv; wsum += i.w; } // Info-Indikatoren (info: true) werden angezeigt, zählen aber nicht in den Score
   }
   if (wsum < cfg.score.minWeight) return null;
   const score = sum / wsum; let overall = score < cfg.score.yellow ? 0 : score < cfg.score.red ? 1 : 2;

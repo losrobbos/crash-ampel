@@ -9,6 +9,8 @@ const WORDS = ['', 'ein', 'zwei', 'drei', 'vier', 'fünf', 'sechs', 'sieben', 'a
 
 export default function Guide({ cfg }) {
   const { lead, how, limits, text: TEXT, more: MORE } = cfg.guide;
+  const nScore = cfg.indicators.filter((i) => !i.info).length;
+  const list = [...cfg.indicators.filter((i) => !i.info), ...cfg.indicators.filter((i) => i.info)]; // Info-Indikatoren am Ende
   return (
     <main className="guide">
       <h1>Anleitung</h1>
@@ -20,13 +22,13 @@ export default function Guide({ cfg }) {
         <ul>{how.bullets.map((b, k) => <li key={k}>{B(b)}</li>)}</ul>
       </div>
 
-      <h2>Die {WORDS[cfg.indicators.length] || cfg.indicators.length} Indikatoren</h2>
-      {cfg.indicators.map((i) => {
+      <h2>Die {WORDS[nScore] || nScore} Score-Indikatoren</h2>
+      {list.map((i) => {
         const t = TEXT[i.id], b = bands(i);
         return (
           <article key={i.id} className="ind">
             <h3>{i.name} <small>{i.sub}</small></h3>
-            <p><span className="tag">{t.kat}</span><span className="tag">{t.timing}</span><span className="tag">Gewicht {Math.round(i.w * 100)} %</span></p>
+            <p><span className="tag">{t.kat}</span><span className="tag">{t.timing}</span><span className="tag">{i.info ? 'nur informativ, nicht im Score' : `Gewicht ${Math.round(i.w * 100)} %`}</span></p>
             <div className="chips" aria-label="Schwellenwerte">
               {[0, 1, 2].map((c) => <span key={c} className="chip"><i className="dot" style={{ background: COLORS[c] }} />{LABEL[c]}: {b[c]}{i.unit}</span>)}
               {i.rise && <span className="chip"><i className="dot" style={{ background: COLORS[1] }} />Gelb auch bei Anstieg ≥ {f(i.rise)} in 4 Wochen</span>}
@@ -36,7 +38,7 @@ export default function Guide({ cfg }) {
               <dt>Warum ist er wichtig?</dt><dd>{t.warum}</dd>
               <dt>So liest du ihn</dt><dd>{t.lesen}</dd>
             </dl>
-            <a href={fredUrl(i.fred || i.id)} target="_blank" rel="noreferrer">Datenreihe bei FRED</a>
+            <a href={i.link ? i.link[1] : fredUrl(i.fred || i.id)} target="_blank" rel="noreferrer">{i.link ? i.link[0] : 'Datenreihe bei FRED'}</a>
           </article>
         );
       })}

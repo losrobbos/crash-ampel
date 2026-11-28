@@ -83,6 +83,19 @@ function Claims({ raw }) {
   );
 }
 
+function RecProb({ s, mm }) {
+  const n = s.length, rows = s.slice(-6).map(([d, v], k) => ({ d, v, m: mm[n - 6 + k] ? mm[n - 6 + k][1] : null })).reverse();
+  return (
+    <>
+      <table className="mini">
+        <thead><tr><th>Datum</th><th>Ø Spread 10J−3M</th><th>Wahrsch.</th></tr></thead>
+        <tbody>{rows.map((r) => <tr key={r.d}><td>{ds(r.d)}</td><td>{r.m != null ? fmt(r.m) + ' Pp.' : '–'}</td><td>{fmt(r.v, 1)} %</td></tr>)}</tbody>
+      </table>
+      <p className="sub">Formel: Φ(−0,5333 − 0,6330 × Spread). Der Spread (T10Y3M) ist der Durchschnitt des laufenden Monats bis zum Stichtag. Die New York Fed nutzt vermutlich eine leicht andere Dreimonatsrate, daher sind Abweichungen vom offiziellen Wert von bis zu etwa einem Prozentpunkt möglich.</p>
+    </>
+  );
+}
+
 // Minimale Datenbasis je Indikator: Verlauf, letzte Werte, Spanne der letzten 52 Wochen
 function Basis({ i, series }) {
   const s = series[i.id] || [];
@@ -92,7 +105,7 @@ function Basis({ i, series }) {
     <>
       <Spark s={s} i={i} />
       <p className="sub">Letzte 52 Wochen, gestrichelt: Gelb- und Rot-Schwelle.</p>
-      {i.basis === 'claims' && series[i.raw] ? <Claims raw={series[i.raw]} /> : (
+      {i.basis === 'claims' && series[i.raw] ? <Claims raw={series[i.raw]} /> : i.basis === 'recprob' && series[i.raw] ? <RecProb s={s} mm={series[i.raw]} /> : (
         <>
           <table className="mini">
             <thead><tr><th>Datum</th><th>Wert</th></tr></thead>
@@ -208,9 +221,27 @@ export default function AmpelPage({ cfg }) {
     return bt.strip.filter((s) => s.d >= iso);
   }, [bt, range]);
 
+  const scoreRows = now ? now.rows.filter((r) => !r.i.info) : [], infoRows = now ? now.rows.filter((r) => r.i.info) : [];
+
   if (err) return <main><p className="msg">Noch keine Daten. Lokal <code>npm run fetch</code> ausführen (erzeugt <code>public/{cfg.dataFile}</code>) und neu laden.</p></main>;
   if (data && !now) return <main><p className="msg">Die geladenen Daten sind veraltet oder unvollständig. Bitte <code>npm run fetch</code> erneut ausführen.</p></main>;
   if (!data) return <main><p className="msg">Lade Daten …</p></main>;
+
+  const card = ({ i, v, trend, lv, date }) => {
+          const eps = Math.abs(i.t[1] - i.t[0]) * 0.1, worse = trend * i.dir;
+          return (
+            <article key={i.id}>
+              <span className="dot" style={{ background: COLORS[lv] }} title={LABEL[lv]} />
+              <h2>{i.name}</h2>
+              <p className="sub">{i.sub}</p>
+              <p className="val">{fmt(v)}<small>{i.unit}</small></p>
+              <p className="sub">{Math.abs(trend) < eps ? '→ stabil' : worse > 0 ? '↗ Belastung steigt' : '↘ Belastung sinkt'} (4 Wochen) · Stand {date}</p>
+              <details><summary><Icon n="sliders" />Schwellenwerte</summary><Scale i={i} v={v} /></details>
+              <details><summary><Icon n="table" />Datenbasis</summary><Basis i={i} series={data.series} /></details>
+              <a href={i.link ? i.link[1] : fredUrl(i.fred || i.id)} target="_blank" rel="noreferrer"><Icon n="link" />{i.link ? i.link[0] : 'Datenreihe bei FRED'}</a>
+            </article>
+          );
+  };
 
   return (
     <main>
@@ -222,23 +253,15 @@ export default function AmpelPage({ cfg }) {
         </div>
       </header>
 
-      <section className="cards">
-        {now.rows.map(({ i, v, trend, lv, date }) => {
-          const eps = Math.abs(i.t[1] - i.t[0]) * 0.1, worse = trend * i.dir;
-          return (
-            <article key={i.id}>
-              <span className="dot" style={{ background: COLORS[lv] }} title={LABEL[lv]} />
-              <h2>{i.name}</h2>
-              <p className="sub">{i.sub}</p>
-              <p className="val">{fmt(v)}<small>{i.unit}</small></p>
-              <p className="sub">{Math.abs(trend) < eps ? '→ stabil' : worse > 0 ? '↗ Belastung steigt' : '↘ Belastung sinkt'} (4 Wochen) · Stand {date}</p>
-              <details><summary><Icon n="sliders" />Schwellenwerte</summary><Scale i={i} v={v} /></details>
-              <details><summary><Icon n="table" />Datenbasis</summary><Basis i={i} series={data.series} /></details>
-              <a href={fredUrl(i.fred || i.id)} target="_blank" rel="noreferrer"><Icon n="link" />Datenreihe bei FRED</a>
-            </article>
-          );
-        })}
-      </section>
+      <section className="cards">{scoreRows.map(card)}</section>
+
+      {infoRows.length > 0 && (
+        <section>
+          <h2>Zusätzliche Indikatoren</h2>
+          <p className="sub">Nur zur Information: Diese Werte fließen nicht in Score, Gesamt-Ampel und Backtest ein.</p>
+          <div className="cards info">{infoRows.map(card)}</div>
+        </section>
+      )}
 
       <section>
         <div className="bar">

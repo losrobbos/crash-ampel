@@ -31,6 +31,12 @@ export const text = {
     warum: 'Er zeigt direkt, wie nervös der Markt ist, und reagiert sofort. Damit bestätigt er akute Stressphasen schnell.',
     lesen: 'Er ist ein Bestätigungs-, kein Frühwarnsignal: Vor Crashs steht er oft noch niedrig. Deshalb hat er nur ein kleines Gewicht.',
   },
+  REC_PROB: {
+    kat: 'Konjunktur', timing: 'Frühindikator (Umrechnung der Zinskurve)',
+    was: 'Die Wahrscheinlichkeit, dass die US-Wirtschaft in den nächsten zwölf Monaten in eine Rezession gerät, wie sie die New Yorker Fed aus dem Abstand zwischen zehnjährigen und dreimonatigen Staatsanleihen berechnet. Es ist ein Probit-Modell mit den Parametern −0,5333 und −0,6330, geschätzt mit Daten von 1959 bis 2009. Die App rechnet es selbst aus dem Zinskurven-Abstand aus: Wahrscheinlichkeit = Φ(−0,5333 − 0,6330 × Spread). Verwendet wird der Spread T10Y3M als Durchschnitt des laufenden Monats bis zum Stichtag. Die New Yorker Fed nutzt vermutlich eine leicht andere Dreimonatsrate, deshalb kann der Wert vom offiziellen um bis zu etwa einen Prozentpunkt abweichen.',
+    warum: 'Die Zinskurve ist einer der am besten untersuchten Rezessions-Frühindikatoren. Die Umrechnung in Prozent macht sie leichter lesbar. Neue Information gegenüber der Zinskurven-Karte steckt nicht darin, deshalb ist dieser Indikator nur informativ und zählt nicht zusätzlich im Score.',
+    lesen: 'Die Schwellen (Gelb ab 20 %, Rot ab 30 %) sind vorläufige Startwerte. Werte über 30 % gab es vor mehreren Rezessionen, aber auch ohne anschließende Rezession: Mitte 2023 lag der Wert bei rund 70 %, und die Rezession blieb aus. Das Modell erkennt den Beginn einer Rezession besser als die allgemeine Frage, ob sie überhaupt kommt. Der Verlauf beginnt, wie der Zinskurven-Abstand in dieser App, im Jahr 1982.',
+  },
   ICSA_REL: {
     kat: 'Arbeitsmarkt', timing: 'Frühindikator (wöchentlich)',
     was: 'Die wöchentliche Zahl neuer Anträge auf Arbeitslosenhilfe in den USA. Die Ampel betrachtet den 4-Wochen-Durchschnitt und misst, wie viel Prozent er über seinem Tiefstwert der letzten 52 Wochen liegt. So spielt das absolute Niveau, das mit der Bevölkerung wächst, keine Rolle.',
